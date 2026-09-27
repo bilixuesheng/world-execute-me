@@ -28,12 +28,12 @@ export const barPulse = (t, decay = 3) => { const q = beat(t); return q.inBar ==
 // Chapters. `tin` is the transition that brings the chapter in.
 export const CHAPTERS = [
   { id: 'boot',        start: 0,      label: 'BOOT' },
-  { id: 'genesis',     start: 16.04,  label: 'GENESIS',        tin: { type: 'flash', dur: 0.5 } },
+  { id: 'genesis',     start: 16.04,  label: 'GENESIS',        tin: { type: 'dissolve', dur: 0.9 } },
   { id: 'geometry',    start: 29.28,  label: 'GEOMETRY',       tin: { type: 'dissolve', dur: 0.6 } },
   { id: 'current',     start: 44.04,  label: 'CURRENT',        tin: { type: 'glitch', dur: 0.45 } },
-  { id: 'sim',         start: 58.65,  label: 'SIMULATION',     tin: { type: 'flash', dur: 0.6 } },
+  { id: 'sim',         start: 58.65,  label: 'SIMULATION',     tin: { type: 'dissolve', dur: 1.0 } },
   { id: 'objects',     start: 73.53,  label: 'NEW OBJECT()',   tin: { type: 'glitch', dur: 0.4 } },
-  { id: 'switch',      start: 88.34,  label: 'SWITCH',         tin: { type: 'flash', dur: 0.4 } },
+  { id: 'switch',      start: 88.34,  label: 'SWITCH',         tin: { type: 'dissolve', dur: 0.9 } },
   { id: 'vibe',        start: 102.93, label: 'VIBRATION',      tin: { type: 'dissolve', dur: 0.8 } },
   { id: 'erase',       start: 117.95, label: 'ERASE',          tin: { type: 'glitch', dur: 0.5 } },
   { id: 'warp',        start: 134.38, label: 'OVERFLOW',       tin: { type: 'flash', dur: 0.35 } },

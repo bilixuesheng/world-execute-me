@@ -82,16 +82,16 @@ export class TypeText {
     this.mesh = planeFromCanvas(this.canvas, worldLineH * (o.rows ?? lines.length) * (o.lineHeight ?? 1.25) * 1.02, o);
   }
   visible(n) {
-    const out = []; let left = n;
-    for (const l of this.lines) {
+    const out = []; let left = n, at = -1;
+    this.lines.forEach((l, i) => {
       const text = l.text ?? l;
-      if (left <= 0) { out.push({ ...l, text: '' }); continue; }
-      const k = Math.min(text.length, left); left -= text.length;
-      out.push({ text: text.slice(0, k) + (left < 0 && this.o.cursor !== false ? '█' : ''), color: l.color });
-    }
-    if (left >= 0 && this.o.cursor !== false && this.o.blink) {
-      const last = out.length - 1; out[last] = { ...out[last], text: out[last].text + (this.o.blink() ? '█' : '') };
-    }
+      if (left <= 0) { out.push({ ...l, text: '' }); return; }
+      const k = Math.min(text.length, left); left -= k;
+      out.push({ text: text.slice(0, k), color: l.color });
+      at = i;
+    });
+    // the cursor always sits right after the last typed character (blinking if a blink clock is given)
+    if (this.o.cursor !== false && at >= 0 && (!this.o.blink || this.o.blink())) out[at] = { ...out[at], text: out[at].text + '█' };
     return out;
   }
   set(n) {

@@ -6,7 +6,7 @@ import { base, look, drift, fade, orbit } from './common.js';
 import { morphPoints, shape, glyphField, fatLine, glowDot } from '../engine/fx.js';
 import { formulaPlane, textPlane, MONO, GLYPHS as G2 } from '../engine/text.js';
 import { CUES, beat, beatPulse } from '../timeline.js';
-import { span, ease, lerp, TAU, clamp, rng } from '../engine/util.js';
+import { span, ease, lerp, TAU, clamp, rng, bump } from '../engine/util.js';
 
 const N = 30000;
 
@@ -79,7 +79,7 @@ export function create({ atlas }) {
   // cage: latitude + longitude bars around the heart
   const cage = new THREE.Group(); scene.add(cage);
   const bars = [];
-  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI; bars.push(fatLine(Array.from({ length: 65 }, (_, k) => { const th = k / 64 * Math.PI; return [Math.sin(th) * Math.cos(a) * 2.7, Math.cos(th) * 2.7, Math.sin(th) * Math.sin(a) * 2.7]; }), { color: [0.55, 0.5, 0.7], width: 0.022 })); }
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI; bars.push(fatLine(Array.from({ length: 129 }, (_, k) => { const th = k / 128 * TAU; /* full great circle */ return [Math.sin(th) * Math.cos(a) * 2.7, Math.cos(th) * 2.7, Math.sin(th) * Math.sin(a) * 2.7]; }), { color: [0.55, 0.5, 0.7], width: 0.022 })); }
   for (let j = 1; j < 6; j++) { const th = j / 6 * Math.PI; bars.push(fatLine(Array.from({ length: 97 }, (_, k) => [Math.sin(th) * Math.cos(k / 96 * TAU) * 2.7, Math.cos(th) * 2.7, Math.sin(th) * Math.sin(k / 96 * TAU) * 2.7]), { color: [0.55, 0.5, 0.7], width: 0.022 })); }
   bars.forEach(b => cage.add(b));
   const loop = formulaPlane('\\rm{while}\\,(love)\\,\\{\\,\\}', 0.6, { size: 110, color: '#ffd2dc', intensity: 1.3 });
@@ -87,7 +87,8 @@ export function create({ atlas }) {
 
   const you = glowDot(0.7, [0.7, 3, 4]); scene.add(you);
   const youTrail = fatLine(Array.from({ length: 80 }, () => [0, 0, 0]), { color: [0.3, 1.4, 2.0], width: 0.03 }); scene.add(youTrail);
-  const youPath = tt => { const k = Math.max(0, tt - C[5]); return [Math.sin(k * 2.2) * (1.2 + k), 0.6 + k * k * 1.3 + k * 1.2, Math.cos(k * 2.2) * (1.2 + k) - k * 0.5]; };
+  // the cyan point orbits the heart, then ("you are free") spirals outward and up from the same orbit
+  const youPath = tt => { const k = Math.max(0, tt - C[5]), R = 3 + k * k * 0.9; return [Math.cos(tt * 1.8) * R, 0.5 + k * k * 1.2 + k * 0.6, Math.sin(tt * 1.8) * R]; };
 
   return {
     scene, camera,
@@ -96,9 +97,9 @@ export function create({ atlas }) {
       // camera first: billboards below copy its orientation
       const d = drift(t, 0.15, 0.4);
       const heartK = span(t, C[4], C[4] + 1, ease.inOut2);
-      const r = lerp(15, 8.2, heartK) - Math.exp(-Math.max(0, t - C[7]) * 3) * (t > C[7] ? 0.8 : 0) + span(t, C[7], 193.46) * 1.5;
+      const r = lerp(15, 8.2, heartK) - bump(t - C[7], 0.3) * 0.8 + span(t, C[7], 193.46) * 1.5;
       const p = orbit(r, lerp(t * 0.25, Math.sin(t * 0.3) * 0.35, heartK), lerp(0.55, 0.12, heartK) + (t > C[5] ? span(t, C[5], C[6]) * 0.25 : 0));
-      look(camera, [p[0] + d[0], p[1] + d[1], p[2] + d[2]], [0, lerp(0, 0.2, heartK) + (t > C[5] && t < C[7] ? 0.5 : 0), 0], 0);
+      look(camera, [p[0] + d[0], p[1] + d[1], p[2] + d[2]], [0, lerp(0, 0.2, heartK) + 0.5 * span(t, C[5], C[5] + 1.2, ease.inOut2) * (1 - span(t, C[7], C[7] + 1.4, ease.inOut2)), 0], 0);
 
       // whirlwind
       const vu = vortex.material.uniforms;
@@ -133,9 +134,9 @@ export function create({ atlas }) {
 
       // free vs trapped
       const yp = youPath(t);
-      you.position.set(...(t < C[5] ? [Math.cos(t * 1.8) * 3, 0.5, Math.sin(t * 1.8) * 3] : yp));
+      you.position.set(...yp);
       fade(you, span(t, C[4] + 1.5, C[4] + 2.2) * (1 - span(t, C[6] + 1, C[6] + 2.5)));
-      const tr = []; for (let i = 0; i < 80; i++) { const tt = t - (79 - i) * 0.02; tr.push(tt < C[5] ? [Math.cos(tt * 1.8) * 3, 0.5, Math.sin(tt * 1.8) * 3] : youPath(tt)); }
+      const tr = []; for (let i = 0; i < 80; i++) { const tt = t - (79 - i) * 0.02; tr.push(youPath(tt)); }
       youTrail.userData.setPoints(tr); fade(youTrail, you.material.opacity * 0.8);
 
       const cageK = span(t, C[6], C[7] + 0.3, ease.inOut2);

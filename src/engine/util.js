@@ -56,3 +56,19 @@ export function cueIndex(t, cues) {
   for (let k = 0; k < cues.length; k++) if (cues[k] <= t) i = k; else break;
   return i;
 }
+
+// Piecewise-constant keys that glide from one value to the next over `dur` seconds after
+// each key time. Continuous even when a new key arrives before the previous glide ends.
+export function glide(t, keys, dur = 1, e = ease.inOut3) {
+  let v = keys[0][1];
+  for (let i = 1; i < keys.length; i++) {
+    const [tk, vk] = keys[i];
+    if (t <= tk) break;
+    v = lerp(v, vk, e(clamp((t - tk) / dur)));
+  }
+  return v;
+}
+export const glide3 = (t, keys, dur, e) => [0, 1, 2].map(i => glide(t, keys.map(([tk, v]) => [tk, v[i]]), dur, e));
+
+// A smooth kick that starts at 0, peaks at x = tau and dies away (no jump at x = 0).
+export const bump = (x, tau = 0.25) => (x <= 0 ? 0 : (x / tau) * Math.exp(1 - x / tau));

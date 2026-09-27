@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { noise1 } from '../engine/util.js';
+import { noise1, clamp, lerp, ease } from '../engine/util.js';
 
 export function base(fov = 50, bg = 0x000000) {
   const scene = new THREE.Scene();
@@ -41,4 +41,25 @@ export function panelCanvas(title, lines, { w = 900, color = '#ff3b30', bg = 'rg
   g.fillStyle = color; g.font = `400 ${size * 0.9}px ${font}`;
   lines.forEach((l, i) => g.fillText(l, size * 0.5, lh * 1.1 + size * 0.6 + lh * (i + 0.5)));
   return c;
+}
+
+// Camera "shots" that blend into each other instead of cutting.
+// shots: [{ at, pose: t => ({ p: [x,y,z], target: [x,y,z], roll }) }]; each blend spans `w` seconds centred on `at`.
+export function shotCam(camera, t, shots, w = 0.9) {
+  let i = 0;
+  for (let k = 1; k < shots.length; k++) if (t >= shots[k].at - w / 2) i = k;
+  let pose = shots[i].pose(t);
+  if (i > 0) {
+    const k = clamp((t - (shots[i].at - w / 2)) / w);
+    if (k < 1) {
+      const prev = shots[i - 1].pose(t), e = ease.inOut3(k);
+      pose = {
+        p: prev.p.map((v, j) => lerp(v, pose.p[j], e)),
+        target: prev.target.map((v, j) => lerp(v, pose.target[j], e)),
+        roll: lerp(prev.roll ?? 0, pose.roll ?? 0, e),
+      };
+    }
+  }
+  look(camera, pose.p, pose.target, pose.roll ?? 0);
+  return pose;
 }
