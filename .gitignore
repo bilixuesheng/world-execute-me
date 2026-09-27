@@ -1,0 +1,10 @@
+node_modules/
+dist/
+out/
+# Copyrighted inputs stay local — never commit the song or its lyrics
+assets/*.mp3
+assets/*.m4a
+assets/*.flac
+assets/*.wav
+assets/*.ogg
+assets/*.lrc

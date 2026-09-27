@@ -1,0 +1,22 @@
+{
+  "name": "world-execute-me-mv",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A 3D music video for Mili's world.execute(me); rendered in real time with three.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node tools/build.mjs --serve",
+    "build": "node tools/build.mjs",
+    "render": "node tools/render.mjs"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/stix-two-math": "^5.3.0",
+    "@fontsource/stix-two-text": "^5.3.0",
+    "esbuild": "^0.28.2",
+    "puppeteer-core": "^25.12.0"
+  }
+}

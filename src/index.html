@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>world.execute(me);</title>
+<style>
+  :root { --fg: #e6ecff; --dim: #7c86a6; --me: #ff2a55; --you: #33e6ff; --bg: #000; --panel: rgba(6,8,16,.92); --line: #2a3150; --btn: #10152a; --btn-line: #36406a; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); overflow: hidden;
+    font: 14px/1.5 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", Consolas, monospace; }
+  #stage { position: fixed; inset: 0; display: grid; place-items: center; }
+  #stage canvas { grid-area: 1 / 1; display: block; }
+  #hud { pointer-events: none; }
+  .hidden { display: none !important; }
+  #loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--dim); }
+  #start { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.72); backdrop-filter: blur(2px); padding: 16px; }
+  .card { width: min(640px, 100%); border: 1px solid var(--line); background: var(--panel); padding: 28px 28px 22px; }
+  .card h1 { margin: 0 0 4px; font-size: clamp(24px, 6vw, 40px); letter-spacing: -.02em; font-weight: 800; }
+  .card h1 em { font-style: normal; color: var(--me); }
+  .card p { margin: 0 0 18px; color: var(--dim); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 10px 0; }
+  label.file, button { font: inherit; color: var(--fg); background: var(--btn); border: 1px solid var(--btn-line); padding: 9px 14px; cursor: pointer; }
+  label.file:focus-within, button:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
+  label.file:hover, button:hover:not(:disabled) { border-color: var(--you); }
+  button.primary { background: var(--me); border-color: var(--me); color: #fff; font-weight: 700; }
+  button:disabled { opacity: .45; cursor: default; }
+  input[type=file] { display: none; }
+  .st { color: var(--dim); font-size: 12px; word-break: break-word; }
+  .keys { margin-top: 16px; color: var(--dim); font-size: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+  kbd { border: 1px solid var(--btn-line); padding: 0 5px; color: var(--fg); }
+  #bar { position: fixed; left: 16px; right: 16px; bottom: 10px; height: 10px; background: rgba(255,255,255,.08); cursor: pointer; transition: opacity .4s; }
+  #fill { height: 100%; width: 0; background: var(--me); opacity: .8; }
+  .tick { position: absolute; top: -3px; width: 1px; height: 16px; background: rgba(255,255,255,.35); }
+  body.idle #bar { opacity: 0; }
+  body.idle { cursor: none; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="gl"></canvas><canvas id="hud"></canvas></div>
+<div id="loading">compiling world…</div>
+<div id="start" class="hidden">
+  <div class="card">
+    <h1>world.execute(<em>me</em>);</h1>
+    <p>A real-time 3D music video. The song isn't included — pick your own copy of Mili's <i>world.execute(me);</i> (album version, 3:32). It stays on your device.</p>
+    <div class="row">
+      <label class="file">♪ choose song…<input id="audiofile" type="file" accept="audio/*"></label>
+      <button id="play" class="primary" disabled>▶ PLAY</button>
+      <button id="demo">watch without audio</button>
+    </div>
+    <div class="st" id="status">or drop the audio file anywhere on this page</div>
+    <div class="row">
+      <label class="file">≡ lyrics .lrc (optional)<input id="lrcfile" type="file" accept=".lrc,text/plain"></label>
+      <span class="st" id="lrcstatus"></span>
+    </div>
+    <div class="keys">
+      <kbd>space</kbd> play/pause · <kbd>←</kbd><kbd>→</kbd> ±5 s · <kbd>0</kbd>–<kbd>9</kbd> jump to chapter (<kbd>shift</kbd> +10) ·
+      <kbd>[</kbd><kbd>]</kbd> nudge sync · <kbd>h</kbd> HUD · <kbd>l</kbd> lyrics · <kbd>f</kbd> fullscreen
+    </div>
+  </div>
+</div>
+<div id="bar"><div id="fill"></div></div>
+<!--APP-->
+</body>
+</html>
