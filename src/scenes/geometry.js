@@ -5,7 +5,7 @@ import { base, look, drift, fade } from './common.js';
 import { fatLine, glowDot, glyphField, gridFloor } from '../engine/fx.js';
 import { formulaPlane, glyphIndex, GLYPHS } from '../engine/text.js';
 import { CUES, beatPulse } from '../timeline.js';
-import { span, ease, lerp, TAU, clamp } from '../engine/util.js';
+import { span, ease, lerp, TAU, clamp, glide, bump } from '../engine/util.js';
 
 const N = 400;
 const PI_DIGITS = '3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214808651';
@@ -68,7 +68,6 @@ export function create({ atlas }) {
   const fDeriv = F('\\frac{d}{dx}\\sin x = \\cos x', 0.95, '#ffe0a0');
   const fLim = F('\\lim_{x→∞}\\,\\frac{1}{x} = 0', 1.0, '#bfefff');
 
-  const sine = (u, x0, x1, amp, ph) => { const x = lerp(x0, x1, u); return [x, amp * Math.sin((x - x0) / R + ph), 0]; };
   const lemn = (u, a) => { const th = u * TAU + Math.PI / 2, s = Math.sin(th), d = 1 + s * s; return [a * Math.cos(th) / d, a * s * Math.cos(th) / d, 0]; };
 
   return {
@@ -86,16 +85,20 @@ export function create({ atlas }) {
       fade(fR3, span(t, b0 + 0.3, b0 + 0.9) * (1 - span(t, c1 - 0.3, c1)));
       fDim.position.set(1.2, 0.8, 0.2); fR3.position.set(1.4, 0.9, 0.2);
 
-      // --- circle traced by the radius
-      const trace = span(t, c1, c1 + 1.3, ease.inOut2);
+      // --- circle traced by the radius. θ is the one angle everything below follows:
+      // the red point rides the circle at θ, and the sine wave is that same point unrolled.
+      const grow = span(t, c1, c1 + 0.45, ease.out3);               // radius extends out of the centre point
+      const trace = span(t, c1 + 0.3, c1 + 1.6, ease.inOut2);       // then sweeps the circle once
+      const OMEGA = 2.1;
+      const theta = trace * TAU + Math.max(0, t - (c1 + 1.6)) * OMEGA;
       const cx = lerp(0, -3.4, span(t, c2 - 0.2, c2 + 0.9, ease.inOut3));
       circle.position.x = cx; radius.position.x = cx;
       circle.userData.draw(trace);
-      fade(circle, span(t, c1, c1 + 0.1) * (1 - span(t, c3 + 0.4, c3 + 1.4)));
-      const ang = trace * TAU + Math.max(0, t - (c1 + 1.3)) * 2.1;
-      const px = Math.cos(ang) * R, py = Math.sin(ang) * R;
+      fade(circle, span(t, c1 + 0.3, c1 + 0.4) * (1 - span(t, c3 + 0.4, c3 + 1.4)));
+      const rr = R * grow;
+      const px = Math.cos(theta) * rr, py = Math.sin(theta) * rr;
       radius.userData.setPoints([[0, 0, 0], [px, py, 0]]);
-      fade(radius, span(t, c1, c1 + 0.2) * (1 - span(t, c3, c3 + 0.8)));
+      fade(radius, span(t, c1, c1 + 0.15) * (1 - span(t, c3, c3 + 0.8)));
       fade(fCirc, span(t, b1, b1 + 0.5) * (1 - span(t, c2 - 0.2, c2 + 0.3)));
       fCirc.position.set(0, -2.45, 0.2);
       piRing.material.uniforms.uTime.value = t;
@@ -104,41 +107,41 @@ export function create({ atlas }) {
       piRing.material.uniforms.uC.value = cx;
       fade(piRing, 1 - span(t, c2 + 0.5, c2 + 1.2));
 
-      // --- sine wave unrolled from the circle, then folded into a lemniscate
-      const x0 = -3.4 + R * 0 + 0, span2 = span(t, c2 + 0.3, c2 + 2.2, ease.inOut2);
-      const ph = Math.max(0, t - (c1 + 1.3)) * 2.1 + TAU; // phase keeps flowing
+      // --- the sine wave: y(x) = R·sin(θ − (x − xs)/R), so at its start x = xs it sits exactly
+      // at the height of the point on the circle, and it travels right as θ turns.
+      const xs = cx + R + 0.55;
+      const len = 8.6 * span(t, c2 + 0.3, c2 + 2.2, ease.inOut2);
       const m = span(t, c3, c3 + 1.6, ease.inOut3);
       const aL = 3.4 + span(t, c3 + 1.6, 44.04, ease.in2) * 0.6;
       const pts = new Array(N + 1);
       for (let i = 0; i <= N; i++) {
-        const u = i / N;
-        const s = sine(u, x0 + R + 0.2, x0 + R + 0.2 + 8.6, R * 0.75, -ph + u * 0.0);
+        const u = i / N, x = xs + u * Math.max(len, 0.001);
+        const sy = R * Math.sin(theta - (x - xs) / R);
         const l = lemn(u, aL);
-        pts[i] = [lerp(s[0], l[0], m), lerp(s[1], l[1], m), 0];
+        pts[i] = [lerp(x, l[0], m), lerp(sy, l[1], m), 0];
       }
       wave.userData.setPoints(pts);
-      wave.userData.draw(m > 0 ? 1 : span2);
-      fade(wave, span(t, c2 + 0.2, c2 + 0.4));
-      wave.material.linewidth = 0.055 * (1 + 0.4 * bp);
+      wave.userData.draw(1);
+      fade(wave, span(t, c2 + 0.25, c2 + 0.45));
+      wave.material.linewidth = 0.05 * (1 + 0.4 * bp);
 
-      // the running point: on the circle, then the tip of the wave, then along ∞
+      // points: red rides the circle; cyan marks where the wave is being drawn from
       const onCircle = [cx + px, py, 0];
-      const k = clamp(span2);
-      const tip = pts[Math.floor(k * N)] ?? pts[0];
-      const runU = ((t - c3) * 0.28) % 1;
-      const run = pts[Math.floor(((runU % 1) + 1) % 1 * N)];
-      let dp = t < c2 + 0.3 ? onCircle : t < c3 ? tip : run;
-      if (t < c1) dp = [0, 0, 0];
+      const waveStart = pts[0];
+      const runU = Math.max(0, t - c3) * 0.28;
+      const run = pts[Math.floor((runU % 1) * N)];
+      const toRun = span(t, c3, c3 + 0.9, ease.inOut2);
+      const dp = onCircle.map((v, i) => lerp(v, run[i], toRun));
       dot.position.set(...dp);
-      dot.scale.setScalar(0.45 * (1 + bp * 0.6 + a.hit * 0.4));
-      dot2.visible = t > c2 + 0.3 && t < c3 + 0.6;
-      dot2.position.set(...onCircle);
-      link.userData.setPoints([onCircle, [tip[0], onCircle[1], 0]]);
+      dot.scale.setScalar(0.45 * (1 + bp * 0.6 + a.hit * 0.4) * (0.4 + 0.6 * span(t, c0, c0 + 0.3)));
+      fade(dot2, span(t, c2 + 0.3, c2 + 0.6) * (1 - span(t, c3, c3 + 0.5)));
+      dot2.position.set(...waveStart);
+      link.userData.setPoints([onCircle, [waveStart[0], onCircle[1], 0]]);
       fade(link, span(t, c2 + 0.3, c2 + 0.6) * (1 - span(t, c3 - 0.3, c3)) * 0.8);
 
       // tangent sliding along the wave
-      const tu = 0.15 + 0.7 * span(t, b2, c3 - 0.1, ease.inOut2);
-      const ti = Math.floor(tu * N), tp = pts[ti], tq = pts[Math.min(N, ti + 2)];
+      const tu = 0.12 + 0.7 * span(t, b2, c3 - 0.1, ease.inOut2);
+      const ti = Math.min(N - 2, Math.floor(tu * N)), tp = pts[ti], tq = pts[ti + 2];
       const dx = tq[0] - tp[0], dy = tq[1] - tp[1], dl = Math.hypot(dx, dy) || 1;
       tangent.userData.setPoints([[tp[0] - dx / dl * 1.4, tp[1] - dy / dl * 1.4, 0.01], [tp[0] + dx / dl * 1.4, tp[1] + dy / dl * 1.4, 0.01]]);
       fade(tangent, span(t, b2, b2 + 0.3) * (1 - span(t, c3 - 0.2, c3 + 0.2)));
@@ -147,16 +150,14 @@ export function create({ atlas }) {
       fade(fLim, span(t, b3, b3 + 0.5) * (1 - span(t, 43.4, 44.0)));
       fLim.position.set(0, -2.3, 0.4);
 
-      // camera: mostly frontal, gentle sway, pushes on each phrase, dives into ∞ at the end
+      // camera: glides between framings (no jumps), a soft push-in on each phrase, dive into ∞ at the end
       const d = drift(t, 0.12, 0.35);
-      const seg = [c0, c1, c2, c3].filter(c => c <= t).length - 1;
-      const segStart = [c0, c1, c2, c3][Math.max(0, seg)];
-      const punch = Math.exp(-(t - segStart) * 3) * 0.8;
-      let camZ = [5.2, 6.8, 9.5, 8.6][Math.max(0, seg)] - punch;
-      let camX = [0.4, 0, 0.4, 0][Math.max(0, seg)], camY = 0.2;
+      const camZ0 = glide(t, [[0, 5.2], [c1, 6.8], [c2, 9.5], [c3, 8.6]], 1.2);
+      const camX = glide(t, [[0, 0.4], [c1, 0], [c2, 0.4], [c3, 0]], 1.2), camY = 0.2;
+      const punch = [c0, c1, c2, c3].reduce((acc, c) => acc + bump(t - c, 0.3), 0) * 0.6;
       const dive = span(t, 42.6, 44.1, ease.in3);
-      camZ = lerp(camZ, 0.9, dive);
-      const az = Math.sin(t * 0.3) * 0.18 + (seg === 0 ? span(t, b0, c1, ease.inOut2) * 0.7 : 0);
+      const camZ = lerp(camZ0 - punch, 0.9, dive);
+      const az = Math.sin(t * 0.3) * 0.18 + span(t, b0, c1, ease.inOut2) * 0.7 * (1 - span(t, c1, c1 + 1.4, ease.inOut2));
       look(camera, [camX + Math.sin(az) * camZ + d[0], camY + d[1] + Math.sin(az) * 0.4, Math.cos(az) * camZ + d[2]], [camX * 0.5, 0, 0], d[2] * 0.2);
 
       return { bloom: 0.55 + bp * 0.25, ca: 0.0015 + dive * 0.01, vignette: 0.55, scan: 0.04, barrel: dive * 0.4 };

@@ -1,7 +1,7 @@
 // 00:44 — 00:58  Oscilloscope: AC and DC, lightning, a dizzy spiral,
 // a tunnel through the years, and two points that finally meet.
 import * as THREE from 'three';
-import { base, look, drift, fade } from './common.js';
+import { base, look, drift, fade, shotCam } from './common.js';
 import { fatLine, glowDot, gridFloor, glyphField } from '../engine/fx.js';
 import { textPlane, MONO } from '../engine/text.js';
 import { CUES, beat, beatPulse } from '../timeline.js';
@@ -67,6 +67,11 @@ export function create({ atlas }) {
     return [Math.cos(a) * r, Math.sin(tt * 1.7 + (who ? 1 : 0)) * r * 0.25, Math.sin(a) * r];
   };
 
+  // roll of the dizzy spin: accelerates through the section, stays continuous afterwards
+  const dizzyRoll = tt => { const x = Math.max(0, Math.min(tt, C[4]) - C[2]), T = C[4] - C[2]; return 0.3 * x + 2.1 * Math.pow(x / T, 3) * T / 3; };
+  // tunnel spin: turns one way, then eases into the other direction (integrated, so no jump)
+  const tunnelRoll = tt => { let r = 0; for (let x = C[4]; x < tt; x += 0.02) r += 0.4 * (1 - 2 * THREE.MathUtils.smoothstep(x, C[5] - 0.3, C[5] + 0.5)) * Math.min(0.02, tt - x); return r; };
+
   return {
     scene, camera,
     update(t, ch, a) {
@@ -85,9 +90,9 @@ export function create({ atlas }) {
           dcPts.push([x, lerp(0, -1.3, split) + lerp(sq * 0.5, 0.35, span(t, C[1] + 0.4, C[1] + 1.2)), 0]);
         }
         ac.userData.setPoints(acPts); dc.userData.setPoints(dcPts);
-        const on = span(t, 44.0, 44.4);
+        const on = span(t, 44.0, 44.4), outA = 1 - span(t, C[2] - 0.1, C[2] + 0.5);
         ac.userData.draw(span(t, 44.0, 44.8)); dc.userData.draw(span(t, C[1], C[1] + 0.6));
-        fade(ac, on); fade(dc, span(t, C[1], C[1] + 0.2));
+        fade(ac, on * outA); fade(dc, span(t, C[1], C[1] + 0.2) * outA);
         grat.material.uniforms.uBright.value = 0.5 + bp * 0.3;
         // lightning between the two traces on every beat
         const r = rng(q.n * 7 + 3);
@@ -95,10 +100,10 @@ export function create({ atlas }) {
           const x0 = (r() - 0.5) * 9, pts = [];
           for (let i = 0; i <= 32; i++) { const u = i / 32; pts.push([x0 + (r() - 0.5) * 0.5 + u * (r() - 0.5) * 0.6, lerp(-1.2, 1.1, u), 0.02]); }
           l.userData.setPoints(pts);
-          fade(l, split * Math.exp(-q.frac * 5) * (j < 2 ? 1 : a.hit));
+          fade(l, split * outA * Math.exp(-q.frac * 5) * (j < 2 ? 1 : a.hit));
         });
         lblAC.position.set(-3.6, 2.45, 0); lblDC.position.set(-3.8, -2.3, 0);
-        fade(lblAC, span(t, C[1], C[1] + 0.4)); fade(lblDC, span(t, C[1] + 0.2, C[1] + 0.6));
+        fade(lblAC, span(t, C[1], C[1] + 0.4) * outA); fade(lblDC, span(t, C[1] + 0.2, C[1] + 0.6) * outA);
         fade(grat, 1 - span(t, C[2], C[2] + 0.5));
       }
 
@@ -120,10 +125,11 @@ export function create({ atlas }) {
       const fly = Math.max(0, t - C[4]);
       if (tunnel.visible) {
         tunnel.position.z = fly * 26 + fly * fly * 1.5;
-        tunnel.rotation.z = (t >= C[5] ? -1 : 1) * fly * 0.4;
+        tunnel.rotation.z = tunnelRoll(t);
         years.forEach(m => { const wz = m.position.z + tunnel.position.z; fade(m, clamp(1 - Math.abs(wz + 12) / 16) * span(t, C[4], C[4] + 0.3)); });
-        rings.forEach((r, i) => { r.material.linewidth = 0.03 + 0.05 * bp; fade(r, 0.8 * (1 - span(t, C[6] - 0.3, C[6] + 0.3))); });
-        ticks.material.uniforms.uTime.value = t; ticks.material.uniforms.uA.value = 1 - span(t, C[6] - 0.3, C[6] + 0.2);
+        const tIn = span(t, C[4] - 0.3, C[4] + 0.6);
+        rings.forEach(r => { r.material.linewidth = 0.03 + 0.05 * bp; fade(r, 0.8 * tIn * (1 - span(t, C[6] - 0.4, C[6] + 0.4))); });
+        ticks.material.uniforms.uTime.value = t; ticks.material.uniforms.uA.value = tIn * (1 - span(t, C[6] - 0.4, C[6] + 0.3));
       }
 
       // --- D: unite
@@ -132,7 +138,7 @@ export function create({ atlas }) {
       if (showPair) {
         const pm = pairPos(t, 0), py = pairPos(t, 1);
         me.position.set(...pm); you.position.set(...py);
-        const s = 0.55 * (1 + bp * 0.5);
+        const s = 0.55 * (1 + bp * 0.5) * span(t, C[6] - 0.3, C[6] + 0.4, ease.out3);
         me.scale.setScalar(s); you.scale.setScalar(s);
         const tm = [], ty = [];
         for (let i = 0; i <= 120; i++) { const tt = t - (120 - i) * 0.012; tm.push(pairPos(tt, 0)); ty.push(pairPos(tt, 1)); }
@@ -145,22 +151,19 @@ export function create({ atlas }) {
 
       // --- camera
       const d = drift(t, 0.1, 0.4);
-      if (t < C[2]) look(camera, [d[0], 0.1 + d[1], 7.2 - span(t, 44.04, C[2], ease.inOut2) * 1.2], [0, 0, 0], d[2] * 0.1);
-      else if (t < C[4]) {
-        const roll = (t - C[2]) * lerp(0.3, 2.4, span(t, C[3], C[4], ease.in2));
-        look(camera, [d[0], d[1], lerp(9, 5.5, span(t, C[2], C[4]))], [0, 0, 0], roll);
-      } else if (t < C[6]) look(camera, [d[0] * 2, d[1] * 2, 4], [0, 0, -20], Math.sin(fly * 0.8) * 0.3);
-      else {
-        const k = span(t, C[6], 58.65, ease.inOut2);
-        const r = lerp(12, 5, k), az = t * 0.35;
-        look(camera, [Math.sin(az) * r + d[0], 2.5 - k * 1.5 + d[1], Math.cos(az) * r], [0, 0, 0], 0);
-      }
+      shotCam(camera, t, [
+        { at: 0, pose: tt => ({ p: [d[0], 0.1 + d[1], 7.2 - span(tt, 44.04, C[2], ease.inOut2) * 1.2], target: [0, 0, 0], roll: d[2] * 0.1 }) },
+        { at: C[2], pose: tt => ({ p: [d[0], d[1], lerp(6.4, 5.5, span(tt, C[2], C[4]))], target: [0, 0, 0], roll: dizzyRoll(tt) }) },
+        { at: C[4], pose: tt => ({ p: [d[0] * 2, d[1] * 2, 4], target: [0, 0, -20], roll: dizzyRoll(C[4]) + Math.sin(Math.max(0, tt - C[4]) * 0.8) * 0.3 }) },
+        { at: C[6], pose: tt => { const k = span(tt, C[6], 58.65, ease.inOut2), r = lerp(10, 5, k), az = tt * 0.35;
+            return { p: [Math.sin(az) * r + d[0], 2.5 - k * 1.5 + d[1], Math.cos(az) * r], target: [0, 0, 0], roll: 0 }; } },
+      ], 1.0);
 
       const blind = Math.exp(-Math.max(0, t - C[2]) * 2.2) * (t >= C[2] ? 1 : 0);
       return {
-        bloom: 0.6 + bp * 0.25 + blind * 1.2, exposure: 1 + blind * 2.2, ca: 0.0015 + (inB ? 0.004 : 0),
+        bloom: 0.6 + bp * 0.25 + blind * 0.8, exposure: 1 + blind * 1.2, ca: 0.0015 + (inB ? 0.004 : 0),
         vignette: 0.55, barrel: inB ? 0.2 : 0, glitch: inA ? a.hit * 0.08 : 0,
-        flash: t > 58.45 ? Math.exp(-(t - 58.45) * 5) * 0.7 : 0,
+        flash: t > 58.45 ? Math.exp(-(t - 58.45) * 5) * 0.35 : 0,
       };
     },
   };

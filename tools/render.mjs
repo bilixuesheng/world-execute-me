@@ -78,7 +78,7 @@ async function openPage(tag = '') {
   page.on('console', m => { if (['error', 'warn', 'warning'].includes(m.type())) console.log(`[page${tag}]`, m.text()); });
   page.on('pageerror', e => console.log(`[page error${tag}]`, e.message));
   await page.goto(page_url, { waitUntil: 'load' });
-  await page.waitForFunction('window.ready === true', { timeout: 180000 });
+  await page.waitForFunction('window.ready === true', { timeout: 600000 });
   return page;
 }
 const grab = async (page, t, type = 'image/jpeg', q = 0.93) => {
@@ -121,12 +121,20 @@ if (args.sheet) {
   for (let i = first; i <= last; i++) { const f = `${FRAMES}/f${String(i).padStart(5, '0')}.jpg`; if (!existsSync(f) || statSync(f).size < 1000) todo.push(i); }
   console.log(`${todo.length} frames to render (${last - first + 1 - todo.length} already done), ${workers} workers, ${W}x${H}@${fps}`);
   let next = 0, done = 0; const start = Date.now();
-  await Promise.all(Array.from({ length: workers }, async (_, w) => {
-    const page = await openPage('#' + w);
-    if (w === 0) writeFileSync(`${FRAMES}/info.json`, JSON.stringify(await page.evaluate(() => window.songInfo())));
+  // Open the pages one at a time: each decodes and analyses the whole song, which is slow in parallel.
+  const pages = [];
+  for (let w = 0; w < workers; w++) pages.push(await openPage('#' + w));
+  writeFileSync(`${FRAMES}/info.json`, JSON.stringify(await pages[0].evaluate(() => window.songInfo())));
+  await Promise.all(pages.map(async (page, w) => {
     while (next < todo.length) {
       const i = todo[next++], f = `${FRAMES}/f${String(i).padStart(5, '0')}.jpg`;
-      const buf = await grab(page, i / fps, 'image/jpeg', 0.94);
+      let buf;
+      try { buf = await grab(page, i / fps, 'image/jpeg', 0.94); }
+      catch (e) { // a crashed page gets replaced; the frame goes back in the queue
+        console.log(`[worker ${w}] ${e.message} — reopening`); todo.push(i);
+        try { await page.close(); } catch {}
+        page = await openPage('#' + w); continue;
+      }
       writeFileSync(f + '.tmp', buf); renameSync(f + '.tmp', f);
       if (++done % 30 === 0 || done === todo.length) {
         const el = (Date.now() - start) / 1000;

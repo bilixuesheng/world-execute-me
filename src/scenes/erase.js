@@ -176,12 +176,12 @@ export function create({ atlas }) {
       // camera
       const d = drift(t, 0.12, 0.45);
       let p, tgt = [0, 0, 0];
-      if (t < C[4]) p = orbit(12.5 - span(t, C[0], C[4]) * 2, 0.4 + t * 0.05, 0.3);
-      else {
-        const k = span(t, C[4], C[5], ease.inOut2);
-        p = [lerp(orbit(10.5, 0.4 + C[4] * 0.05, 0.3)[0], 0, k), lerp(3, 0.4, k), lerp(9, 8, k) - span(t, C[5], 134.38, ease.in2) * 2.5];
-        tgt = [0, lerp(0, 0.3, k), lerp(0, -6, k)];
-      }
+      // orbit the voxel world, then glide (from exactly where the orbit is) to face the eye
+      const orbitAt = tt => orbit(12.5 - span(tt, C[0], C[4]) * 2, 0.4 + tt * 0.05, 0.3);
+      const k = span(t, C[4], C[5], ease.inOut2);
+      const o = orbitAt(Math.min(t, C[4]));
+      p = [lerp(o[0], 0, k), lerp(o[1], 0.4, k), lerp(o[2], 8, k) - span(t, C[5], 134.38, ease.in2) * 2.5];
+      tgt = [0, lerp(0, 0.3, k), lerp(0, -6, k)];
       const shake = (t > C[6] ? 0.6 + span(t, C[6], 134.38) * 1.5 : 0) + (t > C[5] ? 0.2 : 0);
       look(camera, [p[0] + d[0], p[1] + d[1], p[2] + d[2]], tgt, 0);
 

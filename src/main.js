@@ -115,6 +115,7 @@ async function initRender() {
   const au = qs.get('audio'), lrc = qs.get('lrc');
   if (au) { try { await analysis.analyse(await (await fetch(au)).arrayBuffer()); } catch (e) { console.warn('audio analysis failed: ' + e.message); } }
   if (lrc) { try { lyrics.parse(await (await fetch(lrc)).text()); } catch (e) { console.warn('lrc failed: ' + e.message); } }
+  else if (window.__LRC) lyrics.parse(window.__LRC);
   if (qs.has('nohud')) hud.showHud = false;
   if (qs.has('offset')) SYNC.offset = +qs.get('offset');
   const out = document.createElement('canvas'); out.width = W; out.height = H;
@@ -164,20 +165,27 @@ function initPlayer() {
     // dropped in while the demo was running: carry on from the same moment, now with sound
     if (wasPlaying) { seek(at); play(); }
   }
-  async function loadLrc(file) { lyrics.parse(await file.text()); $('#lrcstatus').textContent = `✓ ${lyrics.lines.length} lyric lines`; }
-  const handleFiles = async files => {
+  async function loadLrc(file) {
+    lyrics.parse(await file.text());
+    $('#lrcstatus').textContent = lyrics.loaded ? `✓ ${lyrics.lines.length} lyric lines` : `✗ ${file.name}: no [mm:ss] timestamps found — is this an .lrc file?`;
+  }
+  // Decide by content, not by file name: phones often rename downloads or drop the .lrc extension.
+  const looksLikeLrc = async f => f.size < 2e6 && /\[\d{1,3}:\d{1,2}(?:[.:]\d+)?\]/.test(await f.slice(0, 8192).text());
+  const handleFiles = async (files, want) => {
     for (const f of files) {
-      if (/\.lrc$|text/i.test(f.name + f.type)) await loadLrc(f);
-      else await loadAudio(f).catch(e => status('could not decode: ' + e.message));
+      const lrc = await looksLikeLrc(f);
+      if (lrc) await loadLrc(f);
+      else if (want === 'lrc') $('#lrcstatus').textContent = `✗ ${f.name}: no [mm:ss] timestamps found — is this an .lrc file?`;
+      else await loadAudio(f).catch(e => status(`✗ could not decode ${f.name} as audio (${e.message}). Use an mp3 / m4a / flac / wav file.`));
     }
   };
 
-  $('#audiofile').addEventListener('change', e => handleFiles(e.target.files));
-  $('#lrcfile').addEventListener('change', e => handleFiles(e.target.files));
+  $('#audiofile').addEventListener('change', e => handleFiles(e.target.files, 'audio'));
+  $('#lrcfile').addEventListener('change', e => handleFiles(e.target.files, 'lrc'));
   $('#play').addEventListener('click', () => { seek(+(qs.get('t') || 0)); play(); });
   $('#demo').addEventListener('click', () => { seek(+(qs.get('t') || 0)); play(); });
   window.addEventListener('dragover', e => e.preventDefault());
-  window.addEventListener('drop', e => { e.preventDefault(); handleFiles(e.dataTransfer.files); });
+  window.addEventListener('drop', e => { e.preventDefault(); handleFiles(e.dataTransfer.files, 'any'); });
   audio.addEventListener('ended', () => { playing = false; });
 
   // scrubber with chapter ticks
@@ -212,6 +220,12 @@ function initPlayer() {
   requestAnimationFrame(loop);
   $('#loading').classList.add('hidden');
   $('#start').classList.remove('hidden');
+  // A personal build (tools/build.mjs --lrc=…) carries its lyrics inside the page.
+  if (window.__LRC && !lyrics.loaded) {
+    lyrics.parse(window.__LRC);
+    $('#lrcstatus').textContent = `✓ lyrics built in (${lyrics.lines.length} lines)`;
+    const btn = $('#lrcfile')?.parentElement; if (btn?.firstChild) btn.firstChild.textContent = '≡ replace lyrics';
+  }
   if (qs.has('autoplay')) play();
 }
 

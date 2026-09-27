@@ -5,7 +5,7 @@ import { base, look, drift, fade, orbit } from './common.js';
 import { morphPoints, shape, gridFloor, glyphField, fatLine } from '../engine/fx.js';
 import { TypeText, formulaPlane, textPlane, MONO } from '../engine/text.js';
 import { CUES, beatPulse } from '../timeline.js';
-import { span, ease, lerp, TAU, clamp } from '../engine/util.js';
+import { span, ease, lerp, TAU, clamp, bump } from '../engine/util.js';
 
 export const N = 22000;
 
@@ -120,6 +120,13 @@ export function create({ atlas }) {
 
   const shapes = [cloud, eggplant, tomato, cat, eye];
 
+  // Turntable spin that slows to a stop exactly facing the camera for the eye (integrated, so it never jumps).
+  const spinRate = tt => 0.45 * (1 - THREE.MathUtils.smoothstep(tt, C[3] - 0.8, C[3] + 0.9));
+  const integrate = (t0, t1) => { let r = 0; for (let x = t0; x < t1; x += 0.02) r += spinRate(x) * Math.min(0.02, t1 - x); return r; };
+  const T0 = 70, total = integrate(T0, C[3] + 1.2);
+  const settle = -(((total % TAU) + TAU + Math.PI) % TAU - Math.PI); // shortest turn to face front
+  const spin = tt => integrate(T0, tt) + settle * THREE.MathUtils.smoothstep(tt, C[3] - 0.8, C[3] + 0.9) + Math.sin(tt * 0.5) * 0.25 * THREE.MathUtils.smoothstep(tt, C[3] + 0.9, C[3] + 2.5);
+
   return {
     scene, camera,
     update(t, ch, a) {
@@ -133,11 +140,11 @@ export function create({ atlas }) {
       u.uTime.value = t; u.uMix.value = mt;
       u.uScatter.value = 0.02 + a.hit * 0.05;
       u.uA.value = t > B[2] && t < C[3] ? span(t, B[2], B[2] + 0.3) * (1 - span(t, C[3] - 0.5, C[3])) : 0;
-      let burst = 0; for (const b of B.slice(0, 2)) if (t >= b) burst = Math.max(burst, Math.exp(-(t - b) * 4) * 0.6);
+      let burst = 0; for (const b of B.slice(0, 2)) burst = Math.max(burst, bump(t - b, 0.14) * 0.6);
       u.uB.value = burst;
       u.uSize.value = 0.04 * (1 + bp * 0.25);
-      pts.rotation.y = idx === 4 ? Math.sin(t * 0.5) * 0.25 : t * 0.45;
-      pts.position.y = idx === 4 ? 0.4 : 0;
+      pts.rotation.y = spin(t);
+      pts.position.y = 0.4 * span(t, C[3] - 0.35, C[3] + 0.75, ease.inOut2);
 
       floor.material.uniforms.uBright.value = 0.5 + bp * 0.3;
       fade(floor, 1 - span(t, C[3], C[3] + 0.8)); fade(ring, 1 - span(t, C[3], C[3] + 0.8));
@@ -158,9 +165,8 @@ export function create({ atlas }) {
       // camera: circle the object, pull back for God
       const d = drift(t, 0.1, 0.4);
       const godK = span(t, C[3] - 0.3, C[3] + 1.2, ease.inOut3);
-      const segStart = idx === 0 ? ch.start : C[idx - 1];
-      const push = Math.exp(-(t - segStart) * 2.5) * 1.2;
-      const r = lerp(7.2, 11, godK) + push;
+      const push = C.slice(0, 3).reduce((acc, c) => acc + bump(t - (c - 0.2), 0.35), 0) * 0.7; // soft push-in on each new object
+      const r = lerp(7.2, 11, godK) - push;
       const az = lerp(Math.sin(t * 0.35) * 0.5, 0, godK);
       const p = orbit(r, az, lerp(0.18, 0.02, godK), [0, 0, 0]);
       look(camera, [p[0] + d[0], p[1] + d[1], p[2] + d[2]], [0.3 * (1 - godK), lerp(-0.1, 0.1, godK), 0], 0);

@@ -215,7 +215,7 @@ export function dotTexture() {
   if (dotTex) return dotTex;
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const g = c.getContext('2d'), grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(0.15, 'rgba(255,255,255,.85)'); grd.addColorStop(0.4, 'rgba(255,255,255,.2)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+  grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(0.12, 'rgba(255,255,255,.8)'); grd.addColorStop(0.3, 'rgba(255,255,255,.14)'); grd.addColorStop(0.6, 'rgba(255,255,255,.02)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
   g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
   dotTex = new THREE.CanvasTexture(c);
   return dotTex;

@@ -33,7 +33,7 @@ export function create({ atlas }) {
   });
   scene.add(galaxy);
 
-  const core = glowDot(3, [3, 2.2, 1.8]); scene.add(core);
+  const core = glowDot(3, [1.5, 1.05, 0.85]); scene.add(core);
 
   const rings = Array.from({ length: 4 }, () => {
     const l = fatLine(Array.from({ length: 161 }, (_, i) => [Math.cos(i / 160 * TAU), 0, Math.sin(i / 160 * TAU)]), { color: [2.2, 1.4, 1.8], width: 0.25 });
@@ -68,7 +68,7 @@ export function create({ atlas }) {
       u.uA.value = (t - 147.48) * 0.4 + (ei + 1) * 0.35 + ease.out3(Math.min(1, since * 2)) * 0.35 + implode * 6;
       u.uB.value = implode; u.uC.value = hitE * 0.6; u.uTime.value = t;
       u.uD.value = span(t, 147.3, 147.7) * (1 - span(t, BANG - 0.12, BANG));
-      core.scale.setScalar((2.5 + hitE * 3 + implode * 8) * (1 + bp * 0.2));
+      core.scale.setScalar((1.8 + hitE * 2 + implode * 8) * (1 + bp * 0.15));
       fade(core, 1 - span(t, BANG - 0.05, BANG + 0.2));
 
       rings.forEach((l, i) => {

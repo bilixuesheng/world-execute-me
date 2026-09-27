@@ -5,7 +5,7 @@ import { base, look, drift, fade } from './common.js';
 import { fatLine, glowDot } from '../engine/fx.js';
 import { glyphIndex, ATLAS_COLS } from '../engine/text.js';
 import { CUES, beatPulse, beat } from '../timeline.js';
-import { span, ease, lerp, TAU, rng, clamp } from '../engine/util.js';
+import { span, ease, lerp, TAU, rng, clamp, bump } from '../engine/util.js';
 
 const COLS = 22, ROWS = 7;
 const MESSAGES = ['SWITCH(ME)', 'F  <=>  M', 'DO { ANY; }', 'AM  =>  PM', 'ROLE.SWAP()', 'S  <=>  M'];
@@ -164,7 +164,7 @@ export function create({ atlas }) {
 
       // camera
       const d = drift(t, 0.12, 0.4);
-      const push = mi >= 0 ? Math.exp(-(t - msgTimes[mi]) * 3) * 1.5 : 0;
+      const push = msgTimes.reduce((acc, c) => acc + bump(t - c, 0.3), 0) * 1.2;
       const z = lerp(19, 16, span(t, ch.start, C[6])) - push;
       look(camera, [d[0] + Math.sin(t * 0.25) * 1.5, d[1] + 0.3, z], [0, 0, -2], Math.sin(t * 0.2) * 0.03 + (t > C[6] ? (t - C[6]) * 0.4 : 0));
       // keep the spiral glued in front of the camera
@@ -172,7 +172,7 @@ export function create({ atlas }) {
       spiral.translateZ(-1); const h = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1; spiral.scale.set(h * 16 / 9, h, 1);
 
       const trance = tr * (1 - span(t, 102.4, 103));
-      return { bloom: 0.5 + bp * 0.25 + trance * 0.1, barrel: trance * 0.35, ca: 0.0015 + trance * 0.006, vignette: 0.6, glitch: push > 1.3 ? 0.15 : 0 };
+      return { bloom: 0.5 + bp * 0.25 + trance * 0.1, barrel: trance * 0.35, ca: 0.0015 + trance * 0.006, vignette: 0.6 };
     },
   };
 }
