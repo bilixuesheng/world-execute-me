@@ -124,11 +124,14 @@ function parse(src) {
         continue;
       }
       if (ch === '\\') {
-        i++; let name = ''; while (i < src.length && /[a-z]/i.test(src[i])) name += src[i++];
+        i++; let name = '';
+        if (i < src.length && !/[a-z]/i.test(src[i])) name = src[i++]; // \, \{ \}
+        else while (i < src.length && /[a-z]/i.test(src[i])) name += src[i++];
         if (name === 'frac') { const a = atom(), b = atom(); items.push({ k: 'frac', a, b }); }
         else if (name === 'sqrt') items.push({ k: 'sqrt', a: atom() });
         else if (['rm', 'bf', 'big', 'hat', 'vec', 'dot', 'bar'].includes(name)) items.push({ k: name, a: atom() });
         else if (name === ',') items.push({ k: 'sp', w: 0.18 });
+        else if (name === '{' || name === '}') items.push({ k: 'txt', s: name });
         else if (name === 'quad') items.push({ k: 'sp', w: 1 });
         else items.push({ k: 'rm', a: { k: 'txt', s: name } }); // \sin, \cos, \ln …
         continue;

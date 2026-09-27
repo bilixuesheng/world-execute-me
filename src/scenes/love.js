@@ -65,7 +65,7 @@ export function create({ atlas }) {
   scene.add(qmark, answer);
 
   const eq = formulaPlane('(x^{2} + y^{2} - 1)^{3} - x^{2}y^{3} = 0', 0.85, { size: 120, color: '#ffffff', intensity: 1.5 });
-  scene.add(camera); camera.add(eq); eq.scale.setScalar(0.1); eq.position.set(0, -0.3, -1);
+  scene.add(camera); camera.add(eq); eq.scale.setScalar(0.1); eq.position.set(0, 0.3, -1);
   const curve = fatLine(heart2D(360).map(p => [p[0] * 1.7, p[1] * 1.7 - 0.1, 0]), { color: [2.6, 0.3, 0.6], width: 0.06 });
   scene.add(curve);
 
@@ -83,7 +83,7 @@ export function create({ atlas }) {
   for (let j = 1; j < 6; j++) { const th = j / 6 * Math.PI; bars.push(fatLine(Array.from({ length: 97 }, (_, k) => [Math.sin(th) * Math.cos(k / 96 * TAU) * 2.7, Math.cos(th) * 2.7, Math.sin(th) * Math.sin(k / 96 * TAU) * 2.7]), { color: [0.55, 0.5, 0.7], width: 0.022 })); }
   bars.forEach(b => cage.add(b));
   const loop = formulaPlane('\\rm{while}\\,(love)\\,\\{\\,\\}', 0.6, { size: 110, color: '#ffd2dc', intensity: 1.3 });
-  camera.add(loop); loop.scale.setScalar(0.1); loop.position.set(0, -0.3, -1);
+  camera.add(loop); loop.scale.setScalar(0.1); loop.position.set(-0.46, 0.27, -1);
 
   const you = glowDot(0.7, [0.7, 3, 4]); scene.add(you);
   const youTrail = fatLine(Array.from({ length: 80 }, () => [0, 0, 0]), { color: [0.3, 1.4, 2.0], width: 0.03 }); scene.add(youTrail);

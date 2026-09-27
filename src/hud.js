@@ -3,6 +3,8 @@ import { MONO } from './engine/text.js';
 import { CHAPTERS, beat } from './timeline.js';
 import { clamp } from './engine/util.js';
 
+const CJK = '"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Zen Hei", sans-serif';
+
 const pad = (n, w = 2) => String(n).padStart(w, '0');
 const tc = t => { t = Math.max(0, t); const m = Math.floor(t / 60), s = t - m * 60; return `${pad(m)}:${pad(Math.floor(s))}.${pad(Math.floor((s % 1) * 100))}`; };
 
@@ -56,17 +58,26 @@ export class Hud {
       const shown = lyric.text.slice(0, Math.max(0, n));
       const cursor = n < lyric.text.length || Math.floor(t * 3) % 2 === 0 ? '▍' : ' ';
       const out = clamp((lyric.end - t) / 0.25);
+      const mainFont = `400 ${Math.round(34 * k)}px ${MONO}`, subFont = `400 ${Math.round(26 * k)}px ${CJK}`;
+      g.textBaseline = 'middle';
+      g.font = mainFont;
+      const w1 = g.measureText(`> ${lyric.text}▍`).width;
+      g.font = subFont;
+      const w2 = lyric.sub ? g.measureText(lyric.sub).width : 0;
+      const w = Math.max(w1, w2), y = H * (lyric.sub ? 0.845 : 0.86), boxH = lyric.sub ? 96 * k : 56 * k;
       g.globalAlpha = 0.95 * out;
-      g.font = `400 ${Math.round(34 * k)}px ${MONO}`; g.textAlign = 'center'; g.textBaseline = 'middle';
-      const text = `> ${shown}${cursor}`;
-      const w = g.measureText(`> ${lyric.text}▍`).width;
       g.fillStyle = 'rgba(0,0,0,0.45)';
-      g.fillRect(W / 2 - w / 2 - 18 * k, H * 0.86 - 28 * k, w + 36 * k, 56 * k);
-      g.fillStyle = '#f2f5ff';
-      g.textAlign = 'left';
+      g.fillRect(W / 2 - w / 2 - 18 * k, y - 28 * k, w + 36 * k, boxH);
+      g.textAlign = 'left'; g.font = mainFont; g.fillStyle = '#f2f5ff';
       g.shadowColor = 'rgba(255,60,100,0.8)'; g.shadowBlur = 12 * k;
-      g.fillText(text, W / 2 - w / 2, H * 0.86);
+      g.fillText(`> ${shown}${cursor}`, W / 2 - w1 / 2, y);
       g.shadowBlur = 0;
+      if (lyric.sub) {
+        // the translation fades in underneath while the lyric types out
+        g.globalAlpha = 0.85 * out * clamp((t - lyric.start) / 0.35);
+        g.font = subFont; g.fillStyle = '#b9c3e6'; g.textAlign = 'center';
+        g.fillText(lyric.sub, W / 2, y + 42 * k);
+      }
     }
     g.globalAlpha = 1;
   }
