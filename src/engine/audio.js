@@ -78,7 +78,7 @@ export class AudioAnalysis {
   // Nudge the beat-grid anchor so beats line up with the detected kicks (±110 ms).
   refinePhase() {
     const { kick, frames } = this.env;
-    const period = 60 / SYNC.bpm, base = SYNC.anchor;
+    const period = 60 / SYNC.bpm, base = SYNC.baseAnchor;
     let best = 0, bestScore = -1;
     for (let d = -0.11; d <= 0.11; d += 0.005) {
       let s = 0;

@@ -151,6 +151,8 @@ function initPlayer() {
   const status = s => { $('#status').textContent = s; };
   async function loadAudio(file) {
     status('decoding + analysing ' + file.name + ' …');
+    const wasPlaying = playing, at = started ? clock() : 0;
+    pause();
     const buf = await file.arrayBuffer();
     await analysis.analyse(buf.slice(0));
     if (lastUrl) URL.revokeObjectURL(lastUrl);
@@ -159,6 +161,8 @@ function initPlayer() {
     const warn = Math.abs(analysis.duration - analysis.leadIn - SONG.duration) > 3 ? `  ⚠ expected ~${SONG.duration}s — a different cut? use [ ] to nudge sync` : '';
     status(`✓ ${file.name} (${dur}s, lead-in ${analysis.leadIn.toFixed(2)}s, beat phase ${(analysis.phaseShift * 1000).toFixed(0)} ms)${warn}`);
     $('#play').disabled = false; $('#play').textContent = '▶ PLAY';
+    // dropped in while the demo was running: carry on from the same moment, now with sound
+    if (wasPlaying) { seek(at); play(); }
   }
   async function loadLrc(file) { lyrics.parse(await file.text()); $('#lrcstatus').textContent = `✓ ${lyrics.lines.length} lyric lines`; }
   const handleFiles = async files => {

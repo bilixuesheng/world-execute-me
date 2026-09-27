@@ -6,7 +6,8 @@ export const SONG = { duration: 212.3, bpm: 130 };
 
 export const SYNC = {
   bpm: 130,
-  anchor: 29.28, // a downbeat: the first sung line of verse 1
+  anchor: 29.28, // a downbeat: the first sung line of verse 1 (nudged by the audio analysis)
+  baseAnchor: 29.28,
   offset: 0,     // added to the audio clock before anything reads it
 };
 
