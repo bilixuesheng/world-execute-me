@@ -61,7 +61,7 @@ export function create({ atlas }) {
       g.uBright.value = span(lt, 0, 2.5) * (0.7 + 0.5 * a.bass) * (1 - 0.8 * span(lt, 11.8, 13.2));
       // A ring rolls out from the point on every bar.
       const barT = ((q.b % 4) + 4) % 4 * (60 / 130);
-      g.uWave.value = 1.2 * Math.exp(-barT * 0.8); g.uWaveR.value = barT * 18;
+      g.uWave.value = 1.2 * (1 - Math.exp(-barT / 0.06)) * Math.exp(-barT * 0.8); g.uWaveR.value = barT * 18;
 
       const u = pillars.material.uniforms;
       u.uTime.value = t;

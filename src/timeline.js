@@ -19,11 +19,13 @@ export function beat(t) {
   const n = Math.floor(b);
   return { b, n, frac: b - n, bar: Math.floor(b / 4), inBar: ((n % 4) + 4) % 4 };
 }
-// Sharp pulse on every beat (1 at the beat, decaying).
-export const beatPulse = (t, decay = 7) => Math.exp(-beat(t).frac * (60 / SYNC.bpm) * decay);
+// Pulse envelope: a 25 ms rise (so nothing snaps on in a single frame), then an exponential decay.
+const env = (x, decay) => (1 - Math.exp(-x / 0.025)) * Math.exp(-x * decay);
+// Pulse on every beat (peaks just after the beat, decaying).
+export const beatPulse = (t, decay = 7) => env(beat(t).frac * (60 / SYNC.bpm), decay);
 // Pulse on beats 1 and 3 only (kick-ish), and on every bar downbeat.
-export const halfPulse = (t, decay = 5) => { const q = beat(t); return q.n % 2 === 0 ? Math.exp(-q.frac * (60 / SYNC.bpm) * decay) : 0; };
-export const barPulse = (t, decay = 3) => { const q = beat(t); return q.inBar === 0 ? Math.exp(-q.frac * (60 / SYNC.bpm) * decay) : 0; };
+export const halfPulse = (t, decay = 5) => { const q = beat(t); return q.n % 2 === 0 ? env(q.frac * (60 / SYNC.bpm), decay) : 0; };
+export const barPulse = (t, decay = 3) => { const q = beat(t); return q.inBar === 0 ? env(q.frac * (60 / SYNC.bpm), decay) : 0; };
 
 // Chapters. `tin` is the transition that brings the chapter in.
 export const CHAPTERS = [

@@ -4,7 +4,7 @@ import { base, look, drift, fade } from './common.js';
 import { TypeText, textPlane, MONO } from '../engine/text.js';
 import { glyphField, glowDot, PAL } from '../engine/fx.js';
 import { CUES } from '../timeline.js';
-import { span, ease, clamp, lerp } from '../engine/util.js';
+import { span, ease, clamp, lerp, glide } from '../engine/util.js';
 
 const LINES = [
   { text: '$ power --line=on' },
@@ -77,8 +77,7 @@ export function create({ atlas }) {
       core.scale.setScalar(pk * 1.2);
 
       // camera: follow the line being typed, pulling back to reveal the whole block, then push into the title
-      let line = 0; LINES.forEach((l, i) => { if (t >= c[i]) line = i; });
-      const lineY = 1.4 - 0.325 * line;
+      const lineY = glide(t, LINES.map((l, i) => [i ? c[i] : -1, 1.4 - 0.325 * i]), 0.7); // glide down to each new line
       const reveal = span(t, 0.2, 12.8, ease.inOut2);
       const d = drift(t, 0.04, 0.4);
       const tx = lerp(-1.3, 0, reveal), ty = lerp(lineY, 0.2, reveal * reveal);

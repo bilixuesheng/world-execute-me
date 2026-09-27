@@ -175,6 +175,7 @@ export function create({ atlas }) {
       const pos = curve.getPointAt(uu), ahead = curve.getPointAt(Math.min(1, uu + 0.035));
       if (t < t0) { pos.set(0, 6, 42 + (t0 - t) * 6); ahead.set(0, 0, 0); }
       const outPos = new THREE.Vector3(0, 480, 1450), center = new THREE.Vector3(0, 0, -230);
+      if (t >= t0) ahead.lerp(new THREE.Vector3(0, 0, 0), 1 - span(t, t0, t0 + 1.2, ease.inOut2)); // ease the gaze from the blast onto the path
       const cam = pos.clone().lerp(outPos, pull), tgt = ahead.clone().lerp(center, Math.min(1, pull * 1.6));
       const roll = Math.sin(t * 0.35) * 0.12 * (1 - pull);
       look(camera, cam.toArray(), tgt.toArray(), roll);
