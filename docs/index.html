@@ -25,7 +25,9 @@
   label.file:hover, button:hover:not(:disabled) { border-color: var(--you); }
   button.primary { background: var(--me); border-color: var(--me); color: #fff; font-weight: 700; }
   button:disabled { opacity: .45; cursor: default; }
-  input[type=file] { display: none; }
+  /* the real input sits on top of its button, so the tap lands on it directly (some in-app browsers ignore label clicks on hidden inputs) */
+  label.file { position: relative; overflow: hidden; display: inline-block; }
+  label.file input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 100px; }
   .st { color: var(--dim); font-size: 12px; word-break: break-word; }
   .keys { margin-top: 16px; color: var(--dim); font-size: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
   kbd { border: 1px solid var(--btn-line); padding: 0 5px; color: var(--fg); }
@@ -44,13 +46,13 @@
     <h1>world.execute(<em>me</em>);</h1>
     <p>A real-time 3D music video. The song isn't included — pick your own copy of Mili's <i>world.execute(me);</i> (album version, 3:32). It stays on your device.</p>
     <div class="row">
-      <label class="file">♪ choose song…<input id="audiofile" type="file" accept="audio/*"></label>
+      <label class="file">♪ choose song…<input id="audiofile" type="file" accept="audio/*,.mp3,.m4a,.aac,.flac,.wav,.ogg,.opus"></label>
       <button id="play" class="primary" disabled>▶ PLAY</button>
       <button id="demo">watch without audio</button>
     </div>
     <div class="st" id="status">or drop the audio file anywhere on this page</div>
     <div class="row">
-      <label class="file">≡ lyrics .lrc (optional)<input id="lrcfile" type="file" accept=".lrc,text/plain"></label>
+      <label class="file">≡ lyrics .lrc (optional)<input id="lrcfile" type="file"></label>
       <span class="st" id="lrcstatus"></span>
     </div>
     <div class="keys">
