@@ -115,6 +115,7 @@ async function initRender() {
   const au = qs.get('audio'), lrc = qs.get('lrc');
   if (au) { try { await analysis.analyse(await (await fetch(au)).arrayBuffer()); } catch (e) { console.warn('audio analysis failed: ' + e.message); } }
   if (lrc) { try { lyrics.parse(await (await fetch(lrc)).text()); } catch (e) { console.warn('lrc failed: ' + e.message); } }
+  else if (window.__LRC) lyrics.parse(window.__LRC);
   if (qs.has('nohud')) hud.showHud = false;
   if (qs.has('offset')) SYNC.offset = +qs.get('offset');
   const out = document.createElement('canvas'); out.width = W; out.height = H;
@@ -219,6 +220,12 @@ function initPlayer() {
   requestAnimationFrame(loop);
   $('#loading').classList.add('hidden');
   $('#start').classList.remove('hidden');
+  // A personal build (tools/build.mjs --lrc=…) carries its lyrics inside the page.
+  if (window.__LRC && !lyrics.loaded) {
+    lyrics.parse(window.__LRC);
+    $('#lrcstatus').textContent = `✓ lyrics built in (${lyrics.lines.length} lines)`;
+    const btn = $('#lrcfile')?.parentElement; if (btn?.firstChild) btn.firstChild.textContent = '≡ replace lyrics';
+  }
   if (qs.has('autoplay')) play();
 }
 

@@ -40,7 +40,7 @@ export const CHAPTERS = [
   { id: 'erase',       start: 117.95, label: 'ERASE',          tin: { type: 'glitch', dur: 0.5 } },
   { id: 'warp',        start: 134.38, label: 'OVERFLOW',       tin: { type: 'flash', dur: 0.35 } },
   { id: 'execution',   start: 147.48, label: 'EXECUTION',      tin: { type: 'flash', dur: 0.5 } },
-  { id: 'cosmos',      start: 161.31, label: 'UNIVERSE',       tin: { type: 'white', dur: 1.6 } },
+  { id: 'cosmos',      start: 161.40, label: 'UNIVERSE',       tin: { type: 'white', dur: 1.6 } },
   { id: 'love',        start: 176.96, label: 'LOVE',           tin: { type: 'dissolve', dur: 1.0 } },
   { id: 'singularity', start: 193.46, label: 'SINGULARITY',    tin: { type: 'dissolve', dur: 1.4 } },
   { id: 'end',         start: 205.56, label: 'EXIT',           tin: { type: 'white', dur: 1.2 } },
@@ -58,11 +58,11 @@ export const CUES = {
   objectsB: [75.29, 78.93, 82.56, 86.21],
   switch: [88.34, 89.91, 91.44, 93.52, 95.28, 97.32, 98.93, 100.93],
   vibe: [102.93, 104.92, 106.74, 108.69],
-  left: [110.30, 111.98, 112.89, 113.75, 114.65, 115.60],
+  left: [111.74, 112.66, 113.60, 114.52, 115.46, 116.36], // each sung "left" (measured from the vocals)
   erase: [117.95, 119.81, 121.80, 123.55, 125.33, 128.42, 130.74],
   execution: [147.48, 148.31, 149.14, 150.16, 151.19, 152.07, 152.94, 153.89, 154.84, 155.77, 156.69, 157.74],
-  countdown: [158.79, 159.22, 159.66, 160.05, 160.45, 160.88],
-  bang: 161.31,
+  countdown: [158.83, 159.20, 159.64, 160.34, 160.62, 161.02], // the sung count, from vocal onsets
+  bang: 161.40, // the drop
   cosmos: [162.23, 164.07, 166.05, 167.75, 169.61, 171.77, 173.11, 174.80],
   love: [176.96, 178.79, 180.78, 182.43, 184.33, 187.97, 189.26, 190.24],
   final: 205.56,
