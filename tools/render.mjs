@@ -3,7 +3,7 @@
 //   node tools/render.mjs --sheet=20,35,60 [--cols=3] [--w=640] [--out=out/sheet.jpg]    contact sheet
 //   node tools/render.mjs --stills=20,161.5 [--out=out/stills]                             full-res PNG stills
 //   node tools/render.mjs --frames=0:212.3 [--workers=4] [--fps=30]                        JPEG frames → out/frames (resumable)
-//   node tools/render.mjs --encode --audio=song.mp3 [--out=out/world.execute(me).mp4]      frames + song → MP4
+//   node tools/render.mjs --encode --audio=song.mp3 [--out=out/world.execute(me).mp4]      frames + song → MP4 ([--crf=18] [--maxrate=4M] to trade quality for size)
 //   node tools/render.mjs --clip=150:165 --audio=song.mp3 [--out=out/clip.mp4]             short clip, single worker
 //
 // Common options:
@@ -49,7 +49,8 @@ if (args.encode) {
   try { lead = args.leadin ? lead : JSON.parse(readFileSync(`${FRAMES}/info.json`, 'utf8')).leadIn || 0; } catch {}
   const audio = args.audio ? ['-ss', String(lead), '-i', args.audio, '-map', '0:v', '-map', '1:a', '-c:a', 'aac', '-b:a', '256k', '-shortest'] : [];
   await run(FFMPEG, ['-y', '-loglevel', 'error', '-stats', '-framerate', String(fps), '-i', `${FRAMES}/f%05d.jpg`, ...audio,
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out]);
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', String(args.crf || 18), ...(args.maxrate ? ['-maxrate', args.maxrate, '-bufsize', args.maxrate.replace(/\d+/, n => n * 2)] : []),
+    '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out]);
   console.log('wrote ' + out);
   process.exit(0);
 }
