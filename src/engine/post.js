@@ -6,6 +6,9 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { Pass, FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js';
 
+// Global lens tuning applied on top of every scene: a tight, crisp glow instead of a wide haze.
+export const LOOK = { bloomGain: 0.5, maxRadius: 0.16, minThreshold: 0.9, caGain: 0.55, maxCA: 0.0045 };
+
 export const POST_DEFAULTS = {
   bloom: 0.6, bloomRadius: 0.45, bloomThreshold: 0.7,
   exposure: 1.0, ca: 0.0012, glitch: 0, glitchSeed: 0, flash: 0, fade: 0, invert: 0,
@@ -155,9 +158,11 @@ export class Post {
   }
   render(t, a, b, mix, mixType, p) {
     this.mix.a = a; this.mix.b = b; this.mix.mix = mix; this.mix.type = mixType; this.mix.time = t;
-    this.bloom.strength = p.bloom; this.bloom.radius = p.bloomRadius; this.bloom.threshold = p.bloomThreshold;
+    this.bloom.strength = p.bloom * LOOK.bloomGain;
+    this.bloom.radius = Math.min(p.bloomRadius, LOOK.maxRadius);
+    this.bloom.threshold = Math.max(p.bloomThreshold, LOOK.minThreshold);
     const u = this.final.mat.uniforms;
-    u.uTime.value = t; u.uExposure.value = p.exposure; u.uCA.value = p.ca; u.uGlitch.value = p.glitch; u.uSeed.value = p.glitchSeed;
+    u.uTime.value = t; u.uExposure.value = p.exposure; u.uCA.value = Math.min(p.ca * LOOK.caGain, LOOK.maxCA); u.uGlitch.value = p.glitch; u.uSeed.value = p.glitchSeed;
     u.uFlash.value = p.flash; u.uFade.value = p.fade; u.uInvert.value = p.invert; u.uGrain.value = p.grain; u.uVignette.value = p.vignette;
     u.uScan.value = p.scan; u.uSat.value = p.saturation; u.uTint.value.set(...p.tint); u.uBarrel.value = p.barrel;
     const s = p.shake;
